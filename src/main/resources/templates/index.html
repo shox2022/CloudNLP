@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Medical Report Classification</title>
+    <script>
+        function analyze() {
+            const text = document.getElementById("report").value;
+
+            fetch("/analyze", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "text=" + encodeURIComponent(text)
+            })
+            .then(res => res.json())
+            .then(data => {
+                let output = "<h3>Classification Results</h3><ul>";
+                for (let i = 0; i < data.labels.length; i++) {
+                    output += `<li>${data.labels[i]}: ${(data.scores[i]*100).toFixed(2)}%</li>`;
+                }
+                output += "</ul>";
+                document.getElementById("result").innerHTML = output;
+            });
+        }
+    </script>
+</head>
+<body>
+
+<h2>Patient Report Classification</h2>
+
+<textarea id="report" rows="8" cols="80"></textarea><br>
+<button onclick="analyze()">Analyze</button>
+
+<div id="result"></div>
+
+</body>
+</html>
