@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/nlp")
 @CrossOrigin
-@Tag(name = "Medical NLP", description = "Clinical NLP utilities backed by NLP Cloud")
+@Tag(name = "Medical NLP", description = "Clinical NLP utilities routed Controller → Service → Mapper → upstream NLP engine")
 public class MedicalNlpController {
 
     private final MedicalNlpService medicalNlpService;
@@ -36,7 +36,12 @@ public class MedicalNlpController {
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Grammar checked",
                             content = @Content(schema = @Schema(implementation = GrammarResponse.class))),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error")
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "NLP provider unavailable",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
             }
     )
     public ApiResponse<GrammarResponse> grammar(@Valid @RequestBody ClinicalNoteRequest request) {
@@ -56,8 +61,16 @@ public class MedicalNlpController {
                             examples = @ExampleObject(value = "{\n  \"note\": \"John Doe was admitted in Paris for chest pain\"\n}")
                     )
             ),
-            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Entities extracted",
-                    content = @Content(schema = @Schema(implementation = EntityExtractionResponse.class)))
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Entities extracted",
+                            content = @Content(schema = @Schema(implementation = EntityExtractionResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "NLP provider unavailable",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            }
     )
     public ApiResponse<EntityExtractionResponse> entities(@Valid @RequestBody ClinicalNoteRequest request) {
         long start = System.currentTimeMillis();
@@ -76,8 +89,16 @@ public class MedicalNlpController {
                             examples = @ExampleObject(value = "{\n  \"note\": \"Patient presents with...\"\n}")
                     )
             ),
-            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Note summarized",
-                    content = @Content(schema = @Schema(implementation = SummaryResponse.class)))
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Note summarized",
+                            content = @Content(schema = @Schema(implementation = SummaryResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "NLP provider unavailable",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            }
     )
     public ApiResponse<SummaryResponse> summarize(@Valid @RequestBody ClinicalNoteRequest request) {
         long start = System.currentTimeMillis();
@@ -96,8 +117,16 @@ public class MedicalNlpController {
                             examples = @ExampleObject(value = "{\n  \"note\": \"AI in healthcare improves diagnosis and treatment\"\n}")
                     )
             ),
-            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Keywords extracted",
-                    content = @Content(schema = @Schema(implementation = KeywordResponse.class)))
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Keywords extracted",
+                            content = @Content(schema = @Schema(implementation = KeywordResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "NLP provider unavailable",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            }
     )
     public ApiResponse<KeywordResponse> keywords(@Valid @RequestBody ClinicalNoteRequest request) {
         long start = System.currentTimeMillis();
