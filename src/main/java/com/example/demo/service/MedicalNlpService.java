@@ -1,9 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.config.NlpCloudProperties;
-import com.example.demo.dto.ClassificationRequest;
-import com.example.demo.dto.ClassificationResponse;
+import com.example.demo.dto.*;
 import com.example.demo.exception.UpstreamServiceException;
+import com.example.demo.mapper.NlpCloudMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -16,54 +16,72 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 @Service
-public class NlpCloudService {
+public class MedicalNlpService {
 
-    private static final Logger log = LoggerFactory.getLogger(NlpCloudService.class);
+    private static final Logger log = LoggerFactory.getLogger(MedicalNlpService.class);
     private static final String SAFE_UPSTREAM_MESSAGE = "Unable to process NLP request at this time. Please try again later.";
 
     private final RestTemplate nlpCloudRestTemplate;
+    private final NlpCloudMapper mapper;
     private final NlpCloudProperties properties;
 
-    public NlpCloudService(RestTemplate nlpCloudRestTemplate, NlpCloudProperties properties) {
+    public MedicalNlpService(RestTemplate nlpCloudRestTemplate, NlpCloudMapper mapper, NlpCloudProperties properties) {
         this.nlpCloudRestTemplate = nlpCloudRestTemplate;
+        this.mapper = mapper;
         this.properties = properties;
     }
 
-    public ClassificationResponse classify(String text) {
-
-        ClassificationRequest requestBody = new ClassificationRequest(
-                text,
-                List.of("space", "sport", "business", "journalism", "politics"),
-                true
-        );
-
-        return executeWithRetry(() -> {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<ClassificationRequest> requestEntity = new HttpEntity<>(requestBody, headers);
-
-            ResponseEntity<ClassificationResponse> response = nlpCloudRestTemplate.postForEntity(
-                    "/classification",
-                    requestEntity,
-                    ClassificationResponse.class
-            );
-
-            return response.getBody();
-        });
+    public GrammarResponse checkGrammar(ClinicalNoteRequest request) {
+        return postForResponse("/grammar", request, mapper::toGrammarResponse);
     }
 
-    private <T> T executeWithRetry(SupplierWithException<T> action) {
+    public EntityExtractionResponse extractEntities(ClinicalNoteRequest request) {
+        return postForResponse("/entities", request, mapper::toEntityExtractionResponse);
+    }
+
+    public SummaryResponse summarize(ClinicalNoteRequest request) {
+        return postForResponse("/summarize", request, mapper::toSummaryResponse);
+    }
+
+    public KeywordResponse keywords(ClinicalNoteRequest request) {
+        return postForResponse("/keywords", request, mapper::toKeywordResponse);
+    }
+
+    private <T> T postForResponse(String path,
+                                  ClinicalNoteRequest request,
+                                  Function<String, T> mapperFunction) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("text", request.getNote());
+        if (request.getPatientContext() != null && !request.getPatientContext().isEmpty()) {
+            payload.put("context", request.getPatientContext());
+        }
+
+        String responseBody = executeWithRetry(path, () -> {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(payload, headers);
+
+            ResponseEntity<String> response = nlpCloudRestTemplate.postForEntity(path, requestEntity, String.class);
+            return response.getBody();
+        });
+
+        return mapperFunction.apply(responseBody);
+    }
+
+    private <T> T executeWithRetry(String path, SupplierWithException<T> action) {
         int attempts = Math.min(properties.getMaxRetries(), 2) + 1;
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
                 return action.get();
             } catch (Exception ex) {
                 boolean retryable = attempt < attempts && isRetryable(ex);
-                log.warn("Attempt {}/{} failed calling /classification: {}", attempt, attempts, ex.getClass().getSimpleName());
+                log.warn("Attempt {}/{} failed calling {}: {}", attempt, attempts, path, ex.getClass().getSimpleName());
                 if (!retryable) {
                     throw mapUpstreamError(ex);
                 }
