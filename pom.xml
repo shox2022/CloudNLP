@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.1</version>
+        <version>3.2.5</version>
         <relativePath/>
     </parent>
 
@@ -28,7 +28,7 @@
 
     <dependencies>
 
-        <!-- Web & MVC -->
+        <!-- Spring MVC / REST -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -46,13 +46,13 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- JPA (kept for future, not persisting patient data) -->
+        <!-- JPA (future-ready, no persistence used now) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- In-memory DB (dev only) -->
+        <!-- In-memory DB -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -79,7 +79,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Mock NLP API (TEST ONLY) -->
+        <!-- Mock NLP API (tests only) -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>

@@ -48,7 +48,7 @@ class NlpCloudMapperTest {
         List<Entity> entities = response.getEntities();
         assertEquals(2, entities.size());
         Entity first = entities.get(0);
-        assertEquals("person", first.getType());
+        assertEquals("person", first.getEntity());
         assertEquals("John Doe", first.getText());
         assertEquals(0, first.getStart());
         assertEquals(8, first.getEnd());
@@ -58,7 +58,7 @@ class NlpCloudMapperTest {
     @Test
     void mapsSummaryPayload() throws IOException {
         String payload = Files.readString(Path.of("src/test/resources/fixtures/summary.json"));
-
+ 
         SummaryResponse response = mapper.toSummaryResponse(payload);
 
         assertEquals("This is a concise summary of the report.", response.getSummary());
