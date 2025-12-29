@@ -2,38 +2,20 @@ package com.example.demo.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.Instant;
-
-@Schema(description = "Standardized error payload for API responses")
+@Schema(description = "Error payload nested inside the API response envelope")
 public class ErrorResponse {
 
-    @Schema(description = "Machine-readable error code", example = "VALIDATION_ERROR")
-    private String error;
-
-    @Schema(description = "Human-readable error description", example = "Clinical note is required")
+    @Schema(description = "Human-readable error description", example = "Clinical note must be between 20 and 8,000 characters to ensure sufficient clinical context")
     private String message;
-
-    @Schema(description = "Timestamp of when the error occurred", example = "2024-01-01T12:00:00Z")
-    private Instant timestamp;
 
     public ErrorResponse() {
     }
 
-    public ErrorResponse(String error, String message, Instant timestamp) {
-        this.error = error;
+    public ErrorResponse(String message) {
         this.message = message;
-        this.timestamp = timestamp;
-    }
-
-    public String getError() {
-        return error;
     }
 
     public String getMessage() {
         return message;
-    }
-
-    public Instant getTimestamp() {
-        return timestamp;
     }
 }
