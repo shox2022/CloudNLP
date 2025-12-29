@@ -59,6 +59,10 @@ public class ApiResult<T> {
         return path;
     }
 
+    public String getDisclaimer() {
+        return disclaimer;
+    }
+
     public T getData() {
         return data;
     }
