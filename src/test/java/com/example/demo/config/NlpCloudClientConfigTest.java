@@ -16,6 +16,11 @@ class NlpCloudClientConfigTest {
         NlpCloudProperties properties = new NlpCloudProperties();
         properties.setBaseUrl("https://mock.nlpcloud.io");
         properties.setTimeout(Duration.ofSeconds(2));
+        properties.getModels().setGrammar("grammar-test-model");
+        properties.getModels().setEntities("entities-test-model");
+        properties.getModels().setSummarize("summarize-test-model");
+        properties.getModels().setKeywords("keywords-test-model");
+        properties.getModels().setClassification("classification-test-model");
 
         RestTemplate restTemplate = new NlpCloudClientConfig()
                 .nlpCloudRestTemplate(properties, new RestTemplateBuilder());
