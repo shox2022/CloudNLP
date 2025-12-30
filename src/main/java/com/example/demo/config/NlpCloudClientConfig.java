@@ -1,21 +1,51 @@
 package com.example.demo.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Objects;
 
 @Configuration
 public class NlpCloudClientConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(NlpCloudClientConfig.class);
+
     @Bean
     public RestTemplate nlpCloudRestTemplate(NlpCloudProperties properties, RestTemplateBuilder builder) {
+        String apiKey = sanitize(properties.getApiKey());
+        String model = sanitize(properties.getModel());
+
+        validateApiKey(apiKey);
+        validateModel(model);
+
+        log.info("Configuring NLP Cloud client with base URL '{}' and model '{}'", properties.getBaseUrl(), model);
+
         return builder
-                .rootUri(properties.getBaseUrl() + "/" + properties.getModel())
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Token " + properties.getApiKey())
+                .rootUri(properties.getBaseUrl() + "/" + model)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Token " + apiKey)
                 .setConnectTimeout(properties.getTimeout())
                 .setReadTimeout(properties.getTimeout())
                 .build();
+    }
+
+    private String sanitize(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private void validateApiKey(String apiKey) {
+        if (apiKey == null || apiKey.isBlank() || Objects.equals(apiKey, "***redacted***")) {
+            throw new IllegalStateException("NLP Cloud API key is missing. Please configure 'nlpcloud.api-key'.");
+        }
+    }
+
+    private void validateModel(String model) {
+        if (model == null || model.isBlank()) {
+            throw new IllegalStateException("NLP Cloud model is missing. Please configure 'nlpcloud.model' with an active model.");
+        }
     }
 }
