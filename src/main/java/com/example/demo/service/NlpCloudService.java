@@ -18,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.Objects;
 
 @Service
 public class NlpCloudService {
@@ -41,13 +42,14 @@ public class NlpCloudService {
                 true
         );
 
-        return executeWithRetry(() -> {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<ClassificationRequest> requestEntity = new HttpEntity<>(requestBody, headers);
+        HttpHeaders headers = authorizationHeaders();
+        HttpEntity<ClassificationRequest> requestEntity = new HttpEntity<>(requestBody, headers);
 
+        String path = modelPath(properties.getModels().getClassification(), "classification");
+
+        return executeWithRetry(path, () -> {
             ResponseEntity<ClassificationResponse> response = nlpCloudRestTemplate.postForEntity(
-                    "/classification",
+                    path,
                     requestEntity,
                     ClassificationResponse.class
             );
@@ -56,14 +58,14 @@ public class NlpCloudService {
         });
     }
 
-    private <T> T executeWithRetry(SupplierWithException<T> action) {
+    private <T> T executeWithRetry(String path, SupplierWithException<T> action) {
         int attempts = Math.min(properties.getMaxRetries(), 2) + 1;
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
                 return action.get();
             } catch (Exception ex) {
                 boolean retryable = attempt < attempts && isRetryable(ex);
-                log.warn("Attempt {}/{} failed calling /classification: {}", attempt, attempts, ex.getClass().getSimpleName());
+                log.warn("Attempt {}/{} failed calling {}: {}", attempt, attempts, path, ex.getClass().getSimpleName());
                 if (!retryable) {
                     throw mapUpstreamError(ex);
                 }
@@ -76,6 +78,33 @@ public class NlpCloudService {
             }
         }
         throw new UpstreamServiceException(SAFE_UPSTREAM_MESSAGE, null);
+    }
+
+    private HttpHeaders authorizationHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(HttpHeaders.AUTHORIZATION, "Token " + resolveApiKey());
+        return headers;
+    }
+
+    private String resolveApiKey() {
+        String apiKey = sanitize(properties.getApiKey());
+        if (apiKey == null || apiKey.isBlank() || Objects.equals(apiKey, "***redacted***")) {
+            throw new UpstreamServiceException("NLP Cloud API key is missing. Please configure 'nlpcloud.api-key'.");
+        }
+        return apiKey;
+    }
+
+    private String modelPath(String model, String endpoint) {
+        String sanitizedModel = sanitize(model);
+        if (sanitizedModel == null || sanitizedModel.isBlank()) {
+            throw new UpstreamServiceException(String.format("NLP Cloud model for %s is missing. Please configure 'nlpcloud.models.%s'.", endpoint, endpoint));
+        }
+        return "/" + sanitizedModel + "/" + endpoint;
+    }
+
+    private String sanitize(String value) {
+        return value == null ? null : value.trim();
     }
 
     private boolean isRetryable(Throwable throwable) {
