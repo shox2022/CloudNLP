@@ -6,6 +6,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -22,6 +23,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
@@ -65,6 +67,14 @@ class MedicalNlpControllerIntegrationTest {
     @BeforeAll
     void setup() {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    }
+
+    @AfterEach
+    void resetMockWebServer() throws InterruptedException {
+        RecordedRequest recordedRequest;
+        while ((recordedRequest = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS)) != null) {
+            // Drain to avoid cross-test contamination of recorded requests.
+        }
     }
 
     @AfterAll
