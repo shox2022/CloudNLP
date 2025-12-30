@@ -18,6 +18,7 @@ public class NlpCloudClientConfig {
     public RestTemplate nlpCloudRestTemplate(NlpCloudProperties properties, RestTemplateBuilder builder) {
         String baseUrl = normalizeBaseUrl(properties.getBaseUrl());
 
+        validateRequiredModels(properties);
         log.info("Configuring NLP Cloud client with base URL '{}' and task models {}", baseUrl, describeModels(properties));
 
         return builder
@@ -51,7 +52,20 @@ public class NlpCloudClientConfig {
                 safeValue(models.getClassification()));
     }
 
+    private void validateRequiredModels(NlpCloudProperties properties) {
+        NlpCloudProperties.Models models = properties.getModels();
+
+        if (isBlank(models.getGrammar()) || isBlank(models.getEntities()) || isBlank(models.getSummarize())
+                || isBlank(models.getKeywords()) || isBlank(models.getClassification())) {
+            throw new IllegalStateException("NLP Cloud task models must be configured for grammar, entities, summarize, keywords, and classification.");
+        }
+    }
+
     private String safeValue(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
