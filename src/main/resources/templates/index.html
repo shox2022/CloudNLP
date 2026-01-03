@@ -213,6 +213,13 @@
         keywords: '/api/nlp/keywords'
     };
 
+    const actionLabels = {
+        entities: 'Extracting entities',
+        grammar: 'Checking grammar',
+        summary: 'Summarizing note',
+        keywords: 'Finding keywords'
+    };
+
     function sanitize(text) {
         const div = document.createElement('div');
         div.textContent = text ?? '';
@@ -225,6 +232,21 @@
             payload.patientContext = context;
         }
         return payload;
+    }
+
+    function renderProcessing(type) {
+        const status = document.getElementById('status');
+        const result = document.getElementById('result');
+        const label = actionLabels[type] || 'Processing';
+        status.textContent = label + '…';
+        result.innerHTML = '<div class="meta">Processing…</div>';
+    }
+
+    function formatConfidence(confidence) {
+        if (typeof confidence === 'number') {
+            return sanitize(confidence.toFixed(2));
+        }
+        return sanitize(confidence ?? '—');
     }
 
     async function submitTask(type) {
@@ -245,8 +267,7 @@
             return;
         }
 
-        status.textContent = 'Submitting to the Medical NLP service…';
-        result.innerHTML = '';
+        renderProcessing(type);
         toggleButtons(true);
 
         try {
@@ -258,7 +279,12 @@
                 body: JSON.stringify(buildPayload(note, context))
             });
 
-            const envelope = await response.json();
+            let envelope = null;
+            try {
+                envelope = await response.json();
+            } catch (_) {
+                // fall through to generic error handling below
+            }
             renderResponse(type, envelope, response.ok);
         } catch (err) {
             status.innerHTML = '<span class="error">Unable to contact the service. Please try again.</span>';
@@ -276,6 +302,12 @@
         const message = envelope?.error?.message;
         const disclaimerText = envelope?.medicalDisclaimer || 'This tool does not provide diagnosis.';
         disclaimer.textContent = disclaimerText;
+
+        if (!envelope) {
+            status.innerHTML = '<span class="error">The service returned an unexpected response.</span>';
+            result.innerHTML = '';
+            return;
+        }
 
         if (!ok || message) {
             status.innerHTML = '<span class="error">' + sanitize(message || 'The request could not be completed.') + '</span>';
@@ -311,7 +343,7 @@
             return;
         }
 
-        const rows = entities.map(e => `<tr><td>${sanitize(e.text)}</td><td>${sanitize(e.entity)}</td><td>${sanitize(e.confidence?.toFixed ? e.confidence.toFixed(2) : e.confidence)}</td><td>${sanitize(e.start)}–${sanitize(e.end)}</td></tr>`).join('');
+        const rows = entities.map(e => `<tr><td>${sanitize(e.text)}</td><td>${sanitize(e.entity)}</td><td>${formatConfidence(e.confidence)}</td><td>${sanitize(e.start)}–${sanitize(e.end)}</td></tr>`).join('');
         result.innerHTML = `
             <div class="card">
                 <strong>Extracted entities</strong>
