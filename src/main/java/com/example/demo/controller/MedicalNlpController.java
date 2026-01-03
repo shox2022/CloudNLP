@@ -8,6 +8,7 @@ import com.example.demo.dto.GrammarResponse;
 import com.example.demo.dto.KeywordResponse;
 import com.example.demo.dto.SummaryResponse;
 import com.example.demo.service.UnifiedNlpService;
+import com.example.demo.service.EntityExtractionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,18 +22,26 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+
 @RestController
 @RequestMapping("/api/nlp")
 @CrossOrigin
 @Tag(name = "Medical NLP", description = "Clinical NLP utilities routed Controller → Service → Mapper → upstream NLP engine")
 public class MedicalNlpController {
 
+
+
+
     private static final Logger log = LoggerFactory.getLogger(MedicalNlpController.class);
 
     private final UnifiedNlpService medicalNlpService;
+    private final EntityExtractionService entityExtractionService;
 
-    public MedicalNlpController(UnifiedNlpService medicalNlpService) {
+
+    public MedicalNlpController(UnifiedNlpService medicalNlpService,EntityExtractionService entityExtractionService) {
         this.medicalNlpService = medicalNlpService;
+        this.entityExtractionService=entityExtractionService;
     }
 
     @PostMapping("/grammar")
@@ -95,9 +104,14 @@ public class MedicalNlpController {
                             headers = @Header(name = MedicalDisclaimerFilter.DISCLAIMER_HEADER, description = ApiResult.MEDICAL_DISCLAIMER))
             }
     )
+
+
     public ResponseEntity<ApiResult<EntityExtractionResponse>> entities(@Valid @RequestBody ClinicalNoteRequest request, HttpServletRequest servletRequest) {
         log.info("Received entity extraction request at /api/nlp/entities");
-        EntityExtractionResponse response = medicalNlpService.extractEntities(request);
+
+
+
+        EntityExtractionResponse response = entityExtractionService.extractEntities(request);
         log.info("Completed entity extraction for /api/nlp/entities");
         ApiResult<EntityExtractionResponse> body = ApiResult.success(200, servletRequest.getRequestURI(), response);
         return ResponseEntity.ok(body);
