@@ -15,7 +15,7 @@ public class NlpCloudProperties {
     @NotBlank
     private String apiKey;
 
-    private String baseUrl = "https://api.nlpcloud.io/v1";
+    private String baseUrl = "https://api.nlpcloud.io/v1/gpu";
 
     private Duration timeout = Duration.ofSeconds(5);
 

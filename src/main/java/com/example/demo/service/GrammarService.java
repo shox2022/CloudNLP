@@ -14,24 +14,27 @@ import java.util.Map;
 @Service
 public class GrammarService extends BaseNlpCloudService {
 
-    private static final Logger log = LoggerFactory.getLogger(NlpCloudClientConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(GrammarService.class);
 
     public GrammarService(RestTemplate rt, NlpCloudProperties props) {
         super(rt, props);
     }
 
     public GrammarResponse checkGrammar(ClinicalNoteRequest request) {
-        String path = "/" + properties.getGrammarModel()
-                + properties.getGrammarEndpoint();
+        String path = "/gpu/" + properties.getGrammarModel() + properties.getGrammarEndpoint();
+
         log.info("Grammar model: {}", properties.getGrammarModel());
         log.info("Grammar endpoint: {}", properties.getGrammarEndpoint());
         log.info("Full grammar path: {}", path);
         return executeWithRetry(() -> {
             var payload = Map.of("text", request.getNote());
-
+            log.debug("Grammar request payload keys → {}", payload.keySet());
+            log.debug("Grammar request text length  → {}",
+                    request.getNote() != null ? request.getNote().length() : 0);
             String response = restTemplate.postForObject(
                     path, buildRequest(payload), String.class
             );
+            log.info("NLP Cloud response status → {}", response);
 
             return new GrammarResponse(response, List.of());
         });

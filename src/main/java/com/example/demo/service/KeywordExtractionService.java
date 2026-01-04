@@ -22,7 +22,7 @@ public class KeywordExtractionService extends BaseNlpCloudService {
     public KeywordResponse extractKeywords(ClinicalNoteRequest request) {
 
 
-        String path = "/" + properties.getKeywordModel()
+        String path = "/gpu/" + properties.getKeywordModel()
                 + properties.getKeywordEndpoint();
 
         log.debug("Keyword model: {}", properties.getKeywordModel());

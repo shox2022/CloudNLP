@@ -15,7 +15,7 @@ public class NlpCloudClientConfig {
     @Bean
     public RestTemplate nlpCloudRestTemplate(NlpCloudProperties properties, RestTemplateBuilder builder) {
         String baseUrl = normalizeBaseUrl(properties.getBaseUrl());
-
+        log.info("NLP Cloud base URL     → {}", baseUrl);
         log.info("Configuring NLP Cloud client with base URL '{}' and summarization model '{}'", baseUrl,
                 safeValue(properties.getSummarizationModel()));
 
