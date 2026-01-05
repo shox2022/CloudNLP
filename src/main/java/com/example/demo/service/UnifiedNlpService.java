@@ -10,6 +10,7 @@ import com.example.demo.exception.UpstreamServiceException;
 import com.example.demo.mapper.NlpCloudMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -39,7 +40,8 @@ public class UnifiedNlpService {
     private final NlpCloudMapper mapper;
     private final NlpCloudProperties properties;
 
-    public UnifiedNlpService(RestTemplate nlpCloudRestTemplate, NlpCloudMapper mapper, NlpCloudProperties properties) {
+    public UnifiedNlpService(
+        @Qualifier("nlpCloudRestTemplate") RestTemplate nlpCloudRestTemplate, NlpCloudMapper mapper, NlpCloudProperties properties) {
         this.nlpCloudRestTemplate = nlpCloudRestTemplate;
         this.mapper = mapper;
         this.properties = properties;
@@ -70,6 +72,7 @@ public class UnifiedNlpService {
     }
 
     private String callSummarization(String text) {
+        String path = summarizationPath();
         Map<String, String> payload = Map.of("text", text);
 
 
@@ -88,7 +91,7 @@ public class UnifiedNlpService {
     }
 
     private <T> T executeWithRetry(String path, Supplier<T> action) {
-        int attempts = Math.min(Math.max(properties.getMaxRetries(), 1), 3);
+        int attempts = Math.min(Math.max(properties.getMaxRetries() + 1, 1), 3);
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
                 return action.get();

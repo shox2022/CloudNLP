@@ -1,22 +1,22 @@
 package com.example.demo.controller;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import com.example.demo.dto.ClinicalNoteRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,21 +27,26 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class MedicalNlpControllerIntegrationTest {
 
-    private static final WireMockServer wireMockServer = new WireMockServer();
-
     @Autowired
-    private WebApplicationContext context;
+    private MockMvc mockMvc;
+
+    private static WireMockServer wireMockServer;
+
+    static {
+    wireMockServer = new WireMockServer(options().dynamicPort());
+    wireMockServer.start();
+    }
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    private MockMvc mockMvc;
-
-    @DynamicPropertySource
+        @DynamicPropertySource
     static void registerProps(DynamicPropertyRegistry registry) {
         registry.add("nlpcloud.api-key", () -> "test-key");
         registry.add("nlpcloud.summarization-model", () -> "bart-large-cnn");
@@ -49,23 +54,20 @@ class MedicalNlpControllerIntegrationTest {
         registry.add("nlpcloud.max-retries", () -> "0");
         registry.add("nlpcloud.base-url", () -> wireMockServer.baseUrl());
     }
-
-    @BeforeAll
-    void setup() {
-        wireMockServer.start();
-        configureFor(wireMockServer.port());
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
-    }
+    
 
     @AfterEach
     void resetWireMock() {
-        reset();
+        wireMockServer.resetAll();
     }
 
     @AfterAll
-    void tearDown() {
-        wireMockServer.stop();
+    static void stopWireMock() {
+        if (wireMockServer != null) {
+            wireMockServer.stop();
+        }
     }
+
 
     @Test
     void grammarEndpointReturnsSuggestions() throws Exception {
@@ -82,7 +84,7 @@ class MedicalNlpControllerIntegrationTest {
                 .andExpect(jsonPath("$.error").value(nullValue()))
                 .andExpect(jsonPath("$.data.correctedText").isNotEmpty());
 
-        verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
+        wireMockServer.verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
     }
 
     @Test
@@ -101,7 +103,7 @@ class MedicalNlpControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.entities[0].text").value("John Doe"))
                 .andExpect(jsonPath("$.data.entities[1].entity").value("location"));
 
-        verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
+        wireMockServer.verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
     }
 
     @Test
@@ -121,7 +123,7 @@ class MedicalNlpControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.summary").value("This is a concise summary of the report."))
                 .andExpect(jsonPath("$.data.keyFindings[1]").value("Finding two"));
 
-        verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
+        wireMockServer.verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
     }
 
     @Test
@@ -140,7 +142,7 @@ class MedicalNlpControllerIntegrationTest {
                 .andExpect(jsonPath("$.error").value(nullValue()))
                 .andExpect(jsonPath("$.data.keywords[0]").isNotEmpty());
 
-        verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
+        wireMockServer.verify(postRequestedFor(urlEqualTo("/v1/bart-large-cnn/summarization")));
     }
 
     private void enqueueFixture(String path) throws IOException {
