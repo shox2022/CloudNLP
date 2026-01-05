@@ -75,10 +75,18 @@ public class UnifiedNlpService {
         String path = summarizationPath();
         Map<String, String> payload = Map.of("text", text);
 
-        return executeWithRetry(path, () -> {
+
+        return executeWithRetry(summarizationPath(), () -> {
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(payload, authorizationHeaders());
-            ResponseEntity<String> response = nlpCloudRestTemplate.postForEntity(path, requestEntity, String.class);
+
+
+            ResponseEntity<String> response = nlpCloudRestTemplate.postForEntity(summarizationPath(), requestEntity, String.class);
+            log.info("NLP Cloud response status → {}", response.getStatusCode());
+            log.info("NLP Cloud response body → {}", response.getBody());
             return Objects.requireNonNullElse(response.getBody(), "");
+
+
+
         });
     }
 
